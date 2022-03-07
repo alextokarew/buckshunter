@@ -1,0 +1,62 @@
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <SwitchPreferenceCompat
+        app:key="enabled"
+        app:title="Scan enabled"
+        app:defaultValue="false"
+        app:persistent="true" />
+
+    <EditTextPreference
+        app:key="period_min"
+        app:title="Period, minutes"
+        app:defaultValue="2"
+        app:persistent="true" />
+
+    <ListPreference
+        app:key="currency"
+        app:title="Currency"
+        app:entries="@array/currencies"
+        app:entryValues="@array/currencies"
+        app:defaultValue="USD"
+        app:persistent="true"/>
+
+    <SeekBarPreference
+        app:key="max_distance"
+        app:title="Max distance to alert, km"
+        app:min="1"
+        android:max="10"
+        app:showSeekBarValue="true"
+        app:persistent="true" />
+
+    <EditTextPreference
+        app:key="bottom_left_lat"
+        app:title="Bottom left lat"
+        app:defaultValue="55.0"
+        app:persistent="true" />
+
+    <EditTextPreference
+        app:key="bottom_left_lng"
+        app:title="Bottom left lng"
+        app:defaultValue="37.2"
+        app:persistent="true" />
+
+    <EditTextPreference
+        app:key="top_right_lat"
+        app:title="Top right lat"
+        app:defaultValue="56.0"
+        app:persistent="true" />
+
+    <EditTextPreference
+        app:key="top_right_lng"
+        app:title="Top right lng"
+        app:defaultValue="38.3"
+        app:persistent="true" />
+
+    <EditTextPreference
+        app:key="min_amount"
+        app:title="Min amount to process"
+        app:defaultValue="4000"
+        app:persistent="true" />
+
+</PreferenceScreen>
