@@ -2,7 +2,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <SwitchPreferenceCompat
-        app:key="enabled"
+        app:key="@string/pref_scan_enabled"
         app:title="Scan enabled"
         app:defaultValue="false"
         app:persistent="true" />
@@ -22,8 +22,9 @@
         app:persistent="true"/>
 
     <SeekBarPreference
-        app:key="max_distance"
+        app:key="@string/pref_max_distance"
         app:title="Max distance to alert, km"
+        app:defaultValue="5"
         app:min="1"
         android:max="10"
         app:showSeekBarValue="true"
