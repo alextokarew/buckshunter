@@ -1,17 +1,24 @@
 package com.github.alextokarew.buckshunter
 
+import android.annotation.SuppressLint
 import android.content.SharedPreferences
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Looper
 import android.util.Log
 import androidx.preference.PreferenceManager
 import androidx.viewpager2.widget.ViewPager2
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.google.android.gms.location.*
 import com.google.android.material.tabs.TabLayout
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var locationCallback: LocationCallback
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -38,6 +45,17 @@ class MainActivity : AppCompatActivity() {
                 tabLayout.selectTab(tabLayout.getTabAt(position))
             }
         })
+
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult?) {
+                locationResult ?: return
+                for (location in locationResult.locations){
+                    //TODO maybe update some field in UI
+                    Log.i("Location callback", location.toString())
+                }
+            }
+        }
     }
 
     private val prefsChangeListener = object : SharedPreferences.OnSharedPreferenceChangeListener {
@@ -66,12 +84,21 @@ class MainActivity : AppCompatActivity() {
         prefs.unregisterOnSharedPreferenceChangeListener(prefsChangeListener)
     }
 
+    @SuppressLint("MissingPermission")
     private fun launchPeriodicService() {
         Log.i("Poll exec", "Starting periodic service")
         ApiPollWorker.scheduleNextExecution(this, null)
+        val locationRequest = LocationRequest.create()?.apply {
+            interval = 10000
+//            interval = 10000 TODO: match with preferences pref_period_min
+            fastestInterval = 5000
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())
     }
 
     private fun stopPeriodicService() {
         WorkManager.getInstance(this).cancelAllWorkByTag(ApiPollWorker.TAG)
+        fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 }
