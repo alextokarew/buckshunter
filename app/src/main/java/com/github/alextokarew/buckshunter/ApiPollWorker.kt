@@ -17,33 +17,49 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
     companion object {
         val TAG = "api.poll.worker"
         val CHANNEL_ID = "new.atm.channel"
+        val PREV_RESULT = "prev_result"
 
-        fun scheduleNextExecution(context: Context) {
+        fun scheduleNextExecution(context: Context, prevResult: String?) {
             Log.i("Poll worker", "Trying to enqueue the next execution")
             val workManager = WorkManager.getInstance(context)
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val delay: Long = prefs.getString(context.resources.getString(R.string.pref_period_min), "2")!!.toLong()
+
+            val dataBuilder = Data.Builder()
+            if (prevResult != null) {
+                dataBuilder.putString(PREV_RESULT, prevResult)
+            }
 
             val taskRequest = OneTimeWorkRequestBuilder<ApiPollWorker>()
                 .setInitialDelay(3, TimeUnit.SECONDS)
+//                .setInitialDelay(delay, TimeUnit.MINUTES)
                 .addTag(TAG)
+                .setInputData(dataBuilder.build())
                 .build()
             workManager.enqueue(taskRequest)
-            Log.i("Poll worker", "The next task was enqueued")
+            Log.i("Poll worker", "The next task was enqueued after $delay minutes")
         }
     }
 
     override fun doWork(): Result {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        doIteration(prefs)
+        val prevResult = inputData.getString(PREV_RESULT)
+        doIteration(prefs, prevResult)
         if (prefs.getBoolean(context.resources.getString(R.string.pref_scan_enabled), false)) {
-            scheduleNextExecution(context)
+            scheduleNextExecution(context, "Some prev result")
         }
         return Result.success()
     }
 
-    private fun doIteration(prefs: SharedPreferences) {
+    private fun doIteration(prefs: SharedPreferences, prevResult: String?) {
+        Log.i("Poll worker", "Prev result: ${prevResult ?: "NO PREV RESULT"}")
         Log.i("Poll worker", "Reading distance from prefs: ${prefs.getInt(context.resources.getString(R.string.pref_max_distance), -1)}")
         //Query coordinartes
         //Push notification
+
+    }
+
+    private fun pushNotification(message: String) {
         createNotificationChannel()
         val nm = NotificationManagerCompat.from(context)
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)

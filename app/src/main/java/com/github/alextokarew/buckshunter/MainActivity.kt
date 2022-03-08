@@ -68,7 +68,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun launchPeriodicService() {
         Log.i("Poll exec", "Starting periodic service")
-        ApiPollWorker.scheduleNextExecution(this)
+        ApiPollWorker.scheduleNextExecution(this, null)
     }
 
     private fun stopPeriodicService() {

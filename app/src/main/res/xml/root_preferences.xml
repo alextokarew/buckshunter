@@ -8,7 +8,7 @@
         app:persistent="true" />
 
     <EditTextPreference
-        app:key="period_min"
+        app:key="@string/pref_period_min"
         app:title="Period, minutes"
         app:defaultValue="2"
         app:persistent="true" />
