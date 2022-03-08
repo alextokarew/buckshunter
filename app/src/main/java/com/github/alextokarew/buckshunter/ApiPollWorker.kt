@@ -1,16 +1,25 @@
 package com.github.alextokarew.buckshunter
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationManager
 import android.util.Log
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.preference.PreferenceManager
 import androidx.work.*
+import com.google.android.gms.location.LocationServices
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
 
 class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
 
@@ -55,8 +64,25 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
         Log.i("Poll worker", "Prev result: ${prevResult ?: "NO PREV RESULT"}")
         Log.i("Poll worker", "Reading distance from prefs: ${prefs.getInt(context.resources.getString(R.string.pref_max_distance), -1)}")
         //Query coordinartes
+        val location = getCurrentLocation()
         //Push notification
+        pushNotification("Location: ${location.latitude} ${location.longitude}")
 
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun getCurrentLocation(): Location {
+        val fusedLocationServiceClient = LocationServices.getFusedLocationProviderClient(context)
+        val countDownLatch = CountDownLatch(1)
+        val locationHolder = AtomicReference<Location>(null)
+        fusedLocationServiceClient.lastLocation.addOnSuccessListener { location ->
+            locationHolder.set(location)
+            countDownLatch.countDown()
+        }
+        countDownLatch.await()
+
+        Log.i("LOCATION", locationHolder.get().toString())
+        return locationHolder.get()
     }
 
     private fun pushNotification(message: String) {
@@ -65,7 +91,7 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setContentTitle("New ATM found!")
-            .setContentText("ID: id, Address: address")
+            .setContentText(message)
             .build()
         val notificationId: Int = (System.currentTimeMillis() / 1000).toInt()
         nm.notify(notificationId, notification)
