@@ -14,7 +14,7 @@
         app:persistent="true" />
 
     <ListPreference
-        app:key="currency"
+        app:key="@string/pref_currency"
         app:title="Currency"
         app:entries="@array/currencies"
         app:entryValues="@array/currencies"
@@ -31,31 +31,31 @@
         app:persistent="true" />
 
     <EditTextPreference
-        app:key="bottom_left_lat"
+        app:key="@string/pref_bottom_left_lat"
         app:title="Bottom left lat"
         app:defaultValue="55.0"
         app:persistent="true" />
 
     <EditTextPreference
-        app:key="bottom_left_lng"
+        app:key="@string/pref_bottom_left_lng"
         app:title="Bottom left lng"
         app:defaultValue="37.2"
         app:persistent="true" />
 
     <EditTextPreference
-        app:key="top_right_lat"
+        app:key="@string/pref_top_right_lat"
         app:title="Top right lat"
         app:defaultValue="56.0"
         app:persistent="true" />
 
     <EditTextPreference
-        app:key="top_right_lng"
+        app:key="@string/pref_top_right_lng"
         app:title="Top right lng"
         app:defaultValue="38.3"
         app:persistent="true" />
 
     <EditTextPreference
-        app:key="min_amount"
+        app:key="@string/pref_min_amount"
         app:title="Min amount to process"
         app:defaultValue="4000"
         app:persistent="true" />
