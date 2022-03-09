@@ -17,9 +17,16 @@ import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import com.google.android.gms.location.LocationServices
 import org.json.JSONObject
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.*
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.collections.ArrayList
+
+private val s = "CLOSEST_POINT_DISTANCE"
 
 class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Worker(context, workerParams) {
 
@@ -27,9 +34,9 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
         val TAG = "api.poll.worker"
         val CHANNEL_ID = "new.atm.channel"
         val PREV_RESULT = "prev_result"
+        val CURRENT_RESULT = "CURRENT_RESULT"
 
         fun scheduleNextExecution(context: Context, prevResult: String?) {
-            Log.i("Poll worker", "Trying to enqueue the next execution")
             val workManager = WorkManager.getInstance(context)
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             val delay: Long = prefs.getString(context.resources.getString(R.string.pref_period_min), "2")!!.toLong()
@@ -40,8 +47,8 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
             }
 
             val taskRequest = OneTimeWorkRequestBuilder<ApiPollWorker>()
-                .setInitialDelay(10, TimeUnit.SECONDS)
-//                .setInitialDelay(delay, TimeUnit.MINUTES)
+//                .setInitialDelay(10, TimeUnit.SECONDS)
+                .setInitialDelay(delay, TimeUnit.MINUTES)
                 .addTag(TAG)
                 .setInputData(dataBuilder.build())
                 .build()
@@ -53,39 +60,60 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
     override fun doWork(): Result {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
         val prevResult = inputData.getString(PREV_RESULT)
-        val currentResult = doIteration(prefs, prevResult)
+        val currentResultData = doIteration(prefs, prevResult)
         if (prefs.getBoolean(context.resources.getString(R.string.pref_scan_enabled), false)) {
-            scheduleNextExecution(context, currentResult)
+            scheduleNextExecution(context, currentResultData.getString(CURRENT_RESULT))
         }
-        return Result.success()
+        return Result.success(currentResultData)
     }
 
-    private fun doIteration(prefs: SharedPreferences, prevResult: String?): String {
-        Log.i("Poll worker", "Prev result: ${prevResult ?: "NO PREV RESULT"}")
+    private fun doIteration(prefs: SharedPreferences, prevResult: String?): Data {
         val maxDistance = prefs.getInt(context.resources.getString(R.string.pref_max_distance), -1)
         val prevAtmPoints = prevResult?.split('\n')?.map { AtmPoint.fromString(it) } ?: emptyList()
         val atmPoints = retrieveAtmData()
         val currentResult = atmPoints.map { it.toString() }.joinToString(separator = "\n")
         val location = getCurrentLocation()
+        val result = Data.Builder()
+            .putDouble("LAT", location.latitude)
+            .putDouble("LON", location.longitude)
+            .putString("NOW", DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(LocalDateTime.now()))
 
-        val closestPoints = atmPoints.sortedBy { calculateDistance(location, it) }
-        for(point in closestPoints) {
-            Log.i("CLOSEST POINT", point.toString())
+
+        val (closestPoint, closestDistance) = findClosestPoint(location, atmPoints)
+        if (closestPoint != null) {
+            result.putString("CLOSEST_POINT_ADDRESS", closestPoint.address)
+                .putDouble("CLOSEST_POINT_DISTANCE", closestDistance)
         }
 
         if (prevAtmPoints.isNotEmpty()) {
             val diff = calculateDifference(atmPoints, prevAtmPoints)
-            for(point in diff) {
-                val distance = calculateDistance(location, point)
-                if (distance <= maxDistance) {
-                    pushNotification(point.address)
+            Log.i("POLL WORKER", "AtmPoints length: ${atmPoints.size}, Prev points length: ${prevAtmPoints.size} Diff size ${diff.size}")
+            val (closestNewPoint, closestNewDistance) = findClosestPoint(location, diff)
+            if (closestNewPoint != null) {
+                if (closestNewDistance <= maxDistance) {
+                    pushNotification(closestNewPoint.address)
                 }
+                result.putString("CLOSEST_NEW_POINT_ADDRESS", closestNewPoint.address)
+                    .putDouble("CLOSEST_NEW_POINT_DISTANCE", closestNewDistance)
             }
         }
 
-        //Push notification
-//        pushNotification("Location: ${location.latitude} ${location.longitude}")
-        return currentResult
+        result.putString(CURRENT_RESULT, currentResult)
+
+        return result.build()
+    }
+
+    private fun findClosestPoint(location: Location, points: List<AtmPoint>): Pair<AtmPoint?, Double> {
+        var closestNewPoint: AtmPoint? = null
+        var closestDistance: Double = 100000.0
+        for(point in points) {
+            val distance = calculateDistance(location, point)
+            if (closestDistance > distance) {
+                closestDistance = distance
+                closestNewPoint = point
+            }
+        }
+        return Pair(closestNewPoint, closestDistance)
     }
 
     private fun calculateDifference(
@@ -113,8 +141,6 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
             countDownLatch.countDown()
         }
         countDownLatch.await()
-
-        Log.i("LOCATION", locationHolder.get().toString())
         return locationHolder.get()
     }
 

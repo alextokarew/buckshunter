@@ -8,11 +8,9 @@ import android.os.Looper
 import android.util.Log
 import androidx.preference.PreferenceManager
 import androidx.viewpager2.widget.ViewPager2
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.gms.location.*
 import com.google.android.material.tabs.TabLayout
-import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
@@ -63,7 +61,7 @@ class MainActivity : AppCompatActivity() {
             Log.i("Prefs", "$key was changed")
             when (key) {
                 resources.getString(R.string.pref_scan_enabled) -> if (sp.getBoolean(key, false)) {
-                    launchPeriodicService()
+                    launchPeriodicService(sp)
                 } else {
                     stopPeriodicService()
                 }
@@ -85,13 +83,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("MissingPermission")
-    private fun launchPeriodicService() {
+    private fun launchPeriodicService(prefs: SharedPreferences) {
         Log.i("Poll exec", "Starting periodic service")
+        val delay: Long = prefs.getString(resources.getString(R.string.pref_period_min), "2")!!.toLong() * 60000
         ApiPollWorker.scheduleNextExecution(this, null)
         val locationRequest = LocationRequest.create()?.apply {
-            interval = 10000
-//            interval = 10000 TODO: match with preferences pref_period_min
-            fastestInterval = 5000
+            interval = delay
+            fastestInterval = delay / 2
             priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         }
         fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.getMainLooper())

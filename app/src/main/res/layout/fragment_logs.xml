@@ -1,19 +1,139 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".LogsFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="There will be logs" />
+        <TextView
+            android:id="@+id/last_sync_caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/last_sync"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/last_sync_value"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/n_a"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/last_sync_caption" />
+
+        <TextView
+            android:id="@+id/lat_caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/lat"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/last_sync_value" />
+
+        <TextView
+            android:id="@+id/lat_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="@string/n_a"
+            app:layout_constraintStart_toEndOf="@+id/lat_caption"
+            app:layout_constraintTop_toBottomOf="@+id/last_sync_value" />
+
+        <TextView
+            android:id="@+id/lon_caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="32dp"
+            android:text="@string/lon"
+            android:textStyle="bold"
+            app:layout_constraintStart_toEndOf="@+id/lat_value"
+            app:layout_constraintTop_toBottomOf="@+id/last_sync_value" />
+
+        <TextView
+            android:id="@+id/lon_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="@string/n_a"
+            app:layout_constraintStart_toEndOf="@+id/lon_caption"
+            app:layout_constraintTop_toBottomOf="@+id/last_sync_value" />
+
+        <TextView
+            android:id="@+id/closest_atm_caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/closest_atm"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/lat_caption" />
+
+        <TextView
+            android:id="@+id/closest_atm_address"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/n_a"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/closest_atm_caption" />
+
+        <TextView
+            android:id="@+id/closest_atm_distance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="@string/zero_km"
+            app:layout_constraintStart_toEndOf="@+id/closest_atm_caption"
+            app:layout_constraintTop_toBottomOf="@+id/lon_caption" />
+
+        <TextView
+            android:id="@+id/new_atm_caption"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/new_closest_atm"
+            android:textStyle="bold"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/closest_atm_address" />
+
+        <TextView
+            android:id="@+id/new_atm_address"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/n_a"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/new_atm_caption" />
+
+        <TextView
+            android:id="@+id/new_atm_distance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:text="@string/zero_km"
+            app:layout_constraintStart_toEndOf="@+id/new_atm_caption"
+            app:layout_constraintTop_toBottomOf="@+id/closest_atm_address" />
+
+        <EditText
+            android:id="@+id/logs_holder"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:ems="10"
+            android:gravity="start|top"
+            android:hint="@string/logs"
+            android:importantForAutofill="no"
+            android:inputType="textMultiLine"
+            android:singleLine="false"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/new_atm_address" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
 
 </FrameLayout>
