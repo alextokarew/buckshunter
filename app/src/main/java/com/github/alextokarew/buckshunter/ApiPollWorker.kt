@@ -69,7 +69,11 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
 
     private fun doIteration(prefs: SharedPreferences, prevResult: String?): Data {
         val maxDistance = prefs.getInt(context.resources.getString(R.string.pref_max_distance), -1)
-        val prevAtmPoints = prevResult?.split('\n')?.map { AtmPoint.fromString(it) } ?: emptyList()
+        val prevAtmPoints = if (!prevResult.isNullOrEmpty()) {
+            prevResult.split('\n').map { AtmPoint.fromString(it) }
+        } else {
+            emptyList()
+        }
         val atmPoints = retrieveAtmData()
         val currentResult = atmPoints.map { it.toString() }.joinToString(separator = "\n")
         val location = getCurrentLocation()
@@ -186,7 +190,7 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
         }
 
         val errorListener = Response.ErrorListener { error ->
-            Log.e("Network error", error.networkResponse.statusCode.toString())
+            Log.e("Network error", error.toString())
             latch.countDown()
         }
 
