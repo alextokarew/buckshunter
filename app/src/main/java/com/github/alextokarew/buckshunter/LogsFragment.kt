@@ -52,18 +52,22 @@ class LogsFragment : Fragment() {
         workManager.getWorkInfosLiveData(workQuery).observe(this, Observer { workInfos ->
             if (_binding != null) {
                 val workInfo = workInfos.maxByOrNull { it.outputData.getString("NOW") ?: "0" }
-                val data = workInfo!!.outputData
-                _binding!!.lastSyncValue.text = data.getString("NOW")
-                _binding!!.latValue.text = "%.7f".format(data.getDouble("LAT", 0.0))
-                _binding!!.lonValue.text = "%.7f".format(data.getDouble("LON", 0.0))
-                _binding!!.closestAtmDistance.text = "%.3f km".format(data.getDouble("CLOSEST_POINT_DISTANCE", 0.0))
-                _binding!!.closestAtmAddress.text = data.getString("CLOSEST_POINT_ADDRESS")
-                if (data.hasKeyWithValueOfType<Double>("CLOSEST_NEW_POINT_DISTANCE")) {
-                    _binding!!.newAtmDistance.text = "%.3f km".format(data.getDouble("CLOSEST_NEW_POINT_DISTANCE", 0.0))
-                    _binding!!.newAtmAddress.text = data.getString("CLOSEST_NEW_POINT_ADDRESS")
+                if (workInfo != null) {
+                    val data = workInfo!!.outputData
+                    _binding!!.lastSyncValue.text = data.getString("NOW")
+                    _binding!!.latValue.text = "%.7f".format(data.getDouble("LAT", 0.0))
+                    _binding!!.lonValue.text = "%.7f".format(data.getDouble("LON", 0.0))
+                    _binding!!.closestAtmDistance.text =
+                        "%.3f km".format(data.getDouble("CLOSEST_POINT_DISTANCE", 0.0))
+                    _binding!!.closestAtmAddress.text = data.getString("CLOSEST_POINT_ADDRESS")
+                    if (data.hasKeyWithValueOfType<Double>("CLOSEST_NEW_POINT_DISTANCE")) {
+                        _binding!!.newAtmDistance.text =
+                            "%.3f km".format(data.getDouble("CLOSEST_NEW_POINT_DISTANCE", 0.0))
+                        _binding!!.newAtmAddress.text = data.getString("CLOSEST_NEW_POINT_ADDRESS")
+                    }
+                    _binding!!.logsHolder.text.clear()
+                    _binding!!.logsHolder.text.append(data.getString(ApiPollWorker.CURRENT_RESULT))
                 }
-                _binding!!.logsHolder.text.clear()
-                _binding!!.logsHolder.text.append(data.getString(ApiPollWorker.CURRENT_RESULT))
             }
         })
     }
