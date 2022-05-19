@@ -35,15 +35,16 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
         val CHANNEL_ID = "new.atm.channel"
         val PREV_RESULT = "prev_result"
         val CURRENT_RESULT = "CURRENT_RESULT"
+        val CURRENT_IDS = "CURRENT_IDS"
 
-        fun scheduleNextExecution(context: Context, prevResult: String?) {
+        fun scheduleNextExecution(context: Context, prevResult: IntArray?) {
             val workManager = WorkManager.getInstance(context)
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             val delay: Long = prefs.getString(context.resources.getString(R.string.pref_period_min), "2")!!.toLong()
 
             val dataBuilder = Data.Builder()
             if (prevResult != null) {
-                dataBuilder.putString(PREV_RESULT, prevResult)
+                dataBuilder.putIntArray(PREV_RESULT, prevResult)
             }
 
             val taskRequest = OneTimeWorkRequestBuilder<ApiPollWorker>()
@@ -59,24 +60,32 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
 
     override fun doWork(): Result {
         val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-        val prevResult = inputData.getString(PREV_RESULT)
+        val prevResult = inputData.getIntArray(PREV_RESULT)
         val currentResultData = doIteration(prefs, prevResult)
         if (prefs.getBoolean(context.resources.getString(R.string.pref_scan_enabled), false)) {
-            scheduleNextExecution(context, currentResultData.getString(CURRENT_RESULT))
+            scheduleNextExecution(context, currentResultData.getIntArray(CURRENT_IDS))
         }
         return Result.success(currentResultData)
     }
 
-    private fun doIteration(prefs: SharedPreferences, prevResult: String?): Data {
+    private fun doIteration(prefs: SharedPreferences, prevResult: IntArray?): Data {
         val maxDistance = prefs.getInt(context.resources.getString(R.string.pref_max_distance), -1)
-        val prevAtmPoints = if (!prevResult.isNullOrEmpty()) {
-            prevResult.split('\n').map { AtmPoint.fromString(it) }
+        val prevIds = if (prevResult != null) {
+            prevResult.toSet()
         } else {
-            emptyList()
+            emptySet()
         }
         val atmPoints = retrieveAtmData()
-        val currentResult = atmPoints.map { it.toString() }.joinToString(separator = "\n")
         val location = getCurrentLocation()
+
+        val currentResult = atmPoints
+            .map { Pair(it.toString(), calculateDistance(location, it)) }
+            .sortedBy { it.second }
+            .map { it.first + " %.3f km".format(it.second) }
+            .take(15)
+            .joinToString(separator = "\n")
+        val currentIds = atmPoints.map { it.id }.toIntArray()
+
         val result = Data.Builder()
             .putDouble("LAT", location.latitude)
             .putDouble("LON", location.longitude)
@@ -89,9 +98,9 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
                 .putDouble("CLOSEST_POINT_DISTANCE", closestDistance)
         }
 
-        if (prevAtmPoints.isNotEmpty()) {
-            val diff = calculateDifference(atmPoints, prevAtmPoints)
-            Log.i("POLL WORKER", "AtmPoints length: ${atmPoints.size}, Prev points length: ${prevAtmPoints.size} Diff size ${diff.size}")
+        if (prevIds.isNotEmpty()) {
+            val diff = calculateDifference(atmPoints, prevIds)
+            Log.i("POLL WORKER", "AtmPoints length: ${atmPoints.size}, Prev points length: ${prevIds.size} Diff size ${diff.size}")
             val (closestNewPoint, closestNewDistance) = findClosestPoint(location, diff)
             if (closestNewPoint != null) {
                 if (closestNewDistance <= maxDistance) {
@@ -103,6 +112,7 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
         }
 
         result.putString(CURRENT_RESULT, currentResult)
+        result.putIntArray(CURRENT_IDS, currentIds)
 
         return result.build()
     }
@@ -122,9 +132,8 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
 
     private fun calculateDifference(
         atmPoints: List<AtmPoint>,
-        prevAtmPoints: List<AtmPoint>
+        prevIds: Set<Int>
     ): List<AtmPoint> {
-        val prevIds = prevAtmPoints.map { it.id }.toSet()
         return atmPoints.filter { !prevIds.contains(it.id) }
     }
 
@@ -168,7 +177,7 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
                     for(j in 0 until points.length()) {
                         val point = points.getJSONObject(j)
 
-                        val id = point.getString("id")
+                        val id = point.getString("id").toInt()
                         val address = point.getString("address")
                         val location = point.getJSONObject("location")
                         val lat = location.getDouble("lat")
@@ -183,7 +192,6 @@ class ApiPollWorker(val context: Context, workerParams: WorkerParameters) : Work
 
                     }
                 }
-                out.sortBy { it.id }
                 resultHolder.set(out)
                 latch.countDown()
             }
